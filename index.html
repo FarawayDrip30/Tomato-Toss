@@ -58,31 +58,27 @@
 
     function drawTomato(){
 
-     let tomatoes = [{x:canvas.width/2,y:canvas.height-100,xv:1.5,yv:-2, momentum:100},{x:canvas.width/2,y:canvas.height-150,xv:1.5,yv:-2, momentum:100}];
      for (let t of tomatoes) {
-            tomatoes.x += tomatoes.xv;
-            tomatoes.y += tomatoes.yv*(tomatoes.momentum/50);
-            tomatoes.momentum--;
+            t.x += t.xv;
+            t.y += t.yv*(t.momentum/50);
+            t.momentum--;
 
             ctx.beginPath();
-            ctx.arc(tomatoes.x, tomatoes.y, tomatoRadius, 0, Math.PI*2);
+            ctx.arc(t.x, t.y, tomatoRadius, 0, Math.PI*2);
             ctx.fillStyle = "#fc0339";
             ctx.fill();
             ctx.closePath();
      }
 
      /*
-
      ctx.beginPath();
      ctx.arc(tomatoX, tomatoY, tomatoRadius, 0, Math.PI*2);
      ctx.fillStyle = "#fc0339";
      ctx.fill();
      ctx.closePath();
-
      tomatoX += tomatoDX;
      tomatoY += tomatoDY*(momentumY/50);
      momentumY--;
-
      */
 	}
 
@@ -202,6 +198,8 @@
 	}
 
     bounceSoundActivate();
+	
+	let tomatoes = [{x:canvas.width/2,y:canvas.height-100,xv:1.5,yv:-2, momentum:100},{x:canvas.width/2,y:canvas.height-150,xv:1.5,yv:-2, momentum:100}];
 
     draw();
 
