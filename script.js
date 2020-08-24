@@ -102,11 +102,29 @@ function mouseMoveHandler(e) {
 	}
 }
 
-createjs.Sound.registerSound("bounce.wav", "bounce");
+let audio = { // add other audio elements if needed
+	bounce: document.getElementById("audioBounce"),
+};
+audio.bounce.volume = .5;
 
-function playSound(sound) {
-	let bounceSound = createjs.Sound.play(sound);
-	bounceSound.volume = .5;
+function playSound(sound, action = "restart") {
+	switch (action) {
+		case "restart":
+			audio[sound].currentTime = 0;
+			audio[sound].play();
+			break;
+		case "play":
+		case "unpause":
+			audio[sound].play();
+			break;
+		case "pause":
+			audio[sound].pause();
+			break;
+		case "stop":
+			audio[sound].pause();
+			audio[sound].currentTime = 0;
+			break;
+	}
 }
 
 function gameOver() {
