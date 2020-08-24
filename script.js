@@ -1,40 +1,37 @@
-var canvas = document.getElementById("tomatoCanvas");
-var ctx = canvas.getContext("2d");
+"use strict";
 
-var tomatoX = canvas.width / 2;
-var tomatoY = canvas.height - 100;
-var tomatoDX = 1.5;
-var tomatoDY = -2;
-var tomatoRadius = 10;
+let canvas = document.getElementById("tomatoCanvas");
+let ctx = canvas.getContext("2d");
 
-var momentumY = 100;
+let tomatoRadius = 10;
 
-var critterHeight = 75;
-var critterWidth = 50;
-var critterX = canvas.width / 2 - critterWidth / 2;
-var critterY = canvas.height - critterHeight;
-var critterCanMove = true;
+let critter = {
+	width: 50,
+	height: 75,
+	canMove: true,
+};
+critter.x = canvas.width / 2 - critter.width / 2;
+critter.y = canvas.height - critter.height;
 
-leftPressed = false;
-rightPressed = false;
+let leftPressed = false;
+let rightPressed = false;
 
-var score = 0;
+let score = 0;
 
 function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	drawTomato();
-	bounceTomatoOffWalls();
+	bounceTomatoes();
 	drawCritter();
 	drawScore();
 	requestAnimationFrame(draw);
 }
 
 function drawTomato() {
-
-	for (var t of tomatoes) {
+	for (let t of tomatoes) {
 		t.x += t.xv;
-		t.y += t.yv * (t.momentum / 50);
-		t.momentum--;
+		t.y += t.yv;
+		t.yv += .15;
 
 		ctx.beginPath();
 		ctx.arc(t.x, t.y, tomatoRadius, 0, Math.PI * 2);
@@ -42,76 +39,39 @@ function drawTomato() {
 		ctx.fill();
 		ctx.closePath();
 	}
-
-	/*
-	ctx.beginPath();
-	ctx.arc(tomatoX, tomatoY, tomatoRadius, 0, Math.PI*2);
-	ctx.fillStyle = "#fc0339";
-	ctx.fill();
-	ctx.closePath();
-	tomatoX += tomatoDX;
-	tomatoY += tomatoDY*(momentumY/50);
-	momentumY--;
-	*/
 }
 
-function bounceTomatoOffWalls() {
-	for (t of tomatoes) {
-		if (t.x > canvas.width - tomatoRadius) {
-			t.xv = -t.xv;
-		}
-		if (t.x < 0 + tomatoRadius) {
-			t.xv = -t.xv;
-		}
-		if (t.y > canvas.height - tomatoRadius - critterHeight) {
-			if (t.x < critterX + critterWidth && t.x > critterX) {
-				t.momentum = Math.random() * 75 + 50;
+function bounceTomatoes() {
+	for (let t of tomatoes) {
+		if (t.x <= 0 + tomatoRadius || t.x >= canvas.width - tomatoRadius)
+			t.xv *= -1; // bounce off wall
+		if (t.y > canvas.height - tomatoRadius - critter.height) {
+			if (t.x < critter.x + critter.width && t.x > critter.x) {
+				t.yv = Math.random() * -2 - 8;
+				playSound("bounce");
 				score += 10;
-			}
-			else {
-				if (t.x < critterX && t.x > critterX - tomatoRadius) {
+			} else {
+				if (t.x < critter.x && t.x > critter.x - tomatoRadius) {
 					t.xv = -t.xv;
 					t.x = t.x - 1;
-					critterCanMove = false;
-				}
-				else {
-					if (t.x < critterX + critterWidth + tomatoRadius && t.x > critterX + critterWidth) {
+					critter.canMove = false;
+				} else {
+					if (t.x < critter.x + critter.width + tomatoRadius && t.x > critter.x + critter.width) {
 						t.xv = -t.xv;
 						t.x = t.x + 1;
-						critterCanMove = false;
+						critter.canMove = false;
 					}
 				}
 			}
 		}
-		if (t.y > canvas.height - tomatoRadius) {
-			document.location.reload();
-			alert("Game Over");
-		}
+		if (t.y > canvas.height - tomatoRadius)
+			gameOver();
 	}
 }
 
 function drawCritter() {
-
-	ctx.beginPath();
-	ctx.rect(critterX, critterY, critterWidth, critterHeight);
 	ctx.fillStyle = "#ff9d52";
-	ctx.fill();
-	ctx.closePath();
-
-	if (rightPressed == true) {
-		if (critterX < canvas.width - critterWidth) {
-			if (critterCanMove == true) {
-				critterX += 7;
-			}
-		}
-	}
-	if (leftPressed == true) {
-		if (critterX > 0) {
-			if (critterCanMove == true) {
-				critterX -= 7;
-			}
-		}
-	}
+	ctx.fillRect(critter.x, critter.y, critter.width, critter.height);
 }
 
 function drawScore() {
@@ -120,58 +80,48 @@ function drawScore() {
 	ctx.fillText("Score: " + score, 8, 20);
 }
 
-document.addEventListener("keydown", keyDownHandler, false);
-document.addEventListener("keyup", keyUpHandler, false);
-document.addEventListener("mousemove", mouseMoveHandler, false);
-
-function keyDownHandler(e) {
-	if (e.key == "Right" || e.key == "ArrowRight") {
-		rightPressed = true;
-	}
-	else if (e.key == "Left" || e.key == "ArrowLeft") {
-		leftPressed = true;
-	}
-}
-
-function keyUpHandler(e) {
-	if (e.key == "Right" || e.key == "ArrowRight") {
-		rightPressed = false;
-	}
-	else if (e.key == "Left" || e.key == "ArrowLeft") {
-		leftPressed = false;
-	}
+function keyHandler(state) { // returns another function, the inside function is used in the event handler
+	return function ({ code: key }) {
+		if (key == "ArrowRight")
+			rightPressed = state;
+		else if (key == "ArrowLeft")
+			leftPressed = state;
+	};
 }
 
 function mouseMoveHandler(e) {
-	var relativeX = e.clientX - canvas.offsetLeft;
-	if (relativeX > 0 + critterWidth / 2 && relativeX < canvas.width - critterWidth / 2) {
-		if (critterCanMove == true) {
-			critterX = relativeX - critterWidth / 2;
-		}
-	}
-	else {
-		if (relativeX < canvas.width / 2) {
-			if (critterCanMove == true) {
-				critterX = 0;
-			}
-		}
-		if (relativeX > canvas.width / 2) {
-			if (critterCanMove == true) {
-				critterX = canvas.width - critterWidth;
-			}
-		}
+	if (critter.canMove == true) {
+		let x = e.clientX - canvas.offsetLeft;
+		if (x >= 0 && x < canvas.width - critter.width / 2)
+			critter.x = x - critter.width / 2;
+		else
+			if (x < 0)
+				critter.x = 0;
+			else
+				critter.x = canvas.width - critter.width;
 	}
 }
 
-createjs.Sound.registerSound("bounce.WAV", "bounce");
+createjs.Sound.registerSound("bounce.wav", "bounce");
 
-function bounceSoundActivate() {
-	var bounceSound = createjs.Sound.play("bounce");
-	bounceSound.volume = 0.5;
+function playSound(sound) {
+	let bounceSound = createjs.Sound.play(sound);
+	bounceSound.volume = .5;
 }
 
-bounceSoundActivate();
+function gameOver() {
+	document.location.reload();
+	alert("Game Over");
+}
 
-let tomatoes = [{ x: canvas.width / 2, y: canvas.height - 100, xv: 1.5, yv: -2, momentum: 100 }, { x: canvas.width / 2, y: canvas.height - 150, xv: 1.5, yv: -2, momentum: 100 }];
+let tomatoes = [
+	{ x: canvas.width / 3, y: canvas.height - 300, xv: 4, yv: 0 },
+	{ x: canvas.width / 3 * 2, y: canvas.height - 80, xv: 3, yv: -8 },
+];
 
+document.addEventListener("keydown", keyHandler(true), false);
+document.addEventListener("keyup", keyHandler(false), false);
+document.addEventListener("mousemove", mouseMoveHandler, false);
+
+playSound("bounce");
 draw();
