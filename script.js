@@ -20,16 +20,16 @@ let keymap = {
 
 let score = 0;
 
-let draw
+let draw;
 {
 	let lastTime;
 	let lastDeltaTime;
-	draw = function() {
+	draw = function () {
 		let time = performance.now();
 		let deltaTime; // calculated so that the game doesn't slow down on slow computers
 		if (typeof lastTime == "number")
 			deltaTime = (time - lastTime + lastDeltaTime) / 16; // smoothed out with last deltatime due to time imprecision
-			// divided by 16 to slow down game speed
+		// divided by 16 to slow down game speed
 		else
 			deltaTime = 0; // when the game starts there's no last draw
 		lastTime = time;
@@ -41,7 +41,7 @@ let draw
 		drawCritter();
 		drawScore();
 		requestAnimationFrame(draw);
-	}
+	};
 }
 
 function drawTomato() {
@@ -64,25 +64,29 @@ function moveTomatoes(deltaTime) {
 		// bounce tomatoes
 		if (t.x <= tomatoRadius || t.x >= canvas.width - tomatoRadius)
 			t.xv *= -1; // bounce off wall
-		if (t.y >= canvas.height - tomatoRadius - critter.height) { // in critter area (bottom of screen)
-			if (t.x < critter.x + critter.width && t.x > critter.x) {
-				t.yv = Math.random() * -2 - 8; // bounce off critter
+
+		if (t.fallen) { // already went past top of critter, impossible to save
+			if (t.x < critter.x && t.x > critter.x - tomatoRadius) {
+				t.xv = -t.xv; // bounce off critter side
+				t.x = t.x - 1;
+			} else if (t.x < critter.x + critter.width + tomatoRadius && t.x > critter.x + critter.width) {
+				t.xv = -t.xv; // bounce off critter side
+				t.x = t.x + 1;
+			}
+			if (t.y > canvas.height - tomatoRadius)
+				gameOver();
+		} else if (t.y >= canvas.height - tomatoRadius - critter.height && // in critter area (bottom of screen)
+			t.yv >= 0 // not moving up
+		) {
+			if (t.x + tomatoRadius > critter.x && t.x - tomatoRadius < critter.x + critter.width) {
+				t.yv = Math.random() * -2 - 8; // bounce off top of critter
 				playSound("bounce");
 				score += 10;
 			} else {
-				if (t.x < critter.x && t.x > critter.x - tomatoRadius) {
-					t.xv = -t.xv; // bounce off critter side
-					t.x = t.x - 1;
-					critter.canMove = false;
-				} else if (t.x < critter.x + critter.width + tomatoRadius && t.x > critter.x + critter.width) {
-					t.xv = -t.xv; // bounce off critter side
-					t.x = t.x + 1;
-					critter.canMove = false;
-				}
+				t.fallen = true; // didn't bounce off top, no longer possible to save
+				critter.canMove = false;
 			}
 		}
-		if (t.y > canvas.height - tomatoRadius)
-			gameOver();
 	}
 }
 
