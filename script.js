@@ -13,8 +13,10 @@ let critter = {
 critter.x = canvas.width / 2 - critter.width / 2;
 critter.y = canvas.height - critter.height;
 
-let leftPressed = false;
-let rightPressed = false;
+let keymap = {
+	left: false,
+	right: false,
+};
 
 let score = 0;
 
@@ -82,10 +84,14 @@ function drawScore() {
 
 function keyHandler(state) { // returns another function, the inside function is used in the event handler
 	return function ({ code: key }) {
-		if (key == "ArrowRight")
-			rightPressed = state;
-		else if (key == "ArrowLeft")
-			leftPressed = state;
+		switch (key) {
+			case "ArrowRight":
+				keymap.right = state;
+				break;
+			case "ArrowLeft":
+				keymap.left = state;
+				break;
+		}
 	};
 }
 
@@ -137,9 +143,16 @@ let tomatoes = [
 	{ x: canvas.width / 3 * 2, y: canvas.height - 80, xv: 3, yv: -8 },
 ];
 
-document.addEventListener("keydown", keyHandler(true), false);
-document.addEventListener("keyup", keyHandler(false), false);
-document.addEventListener("mousemove", mouseMoveHandler, false);
+function startGame() {
+	canvas.removeEventListener("mousedown", startGame);
 
-playSound("bounce");
-draw();
+	document.addEventListener("keydown", keyHandler(true));
+	document.addEventListener("keyup", keyHandler(false));
+	canvas.addEventListener("mousemove", mouseMoveHandler);
+
+	draw();
+}
+canvas.addEventListener("mousedown", startGame);
+ctx.font = "128px Arial";
+ctx.fillStyle = "#000";
+ctx.fillText("Click to start", 8, 128);
