@@ -20,21 +20,32 @@ let keymap = {
 
 let score = 0;
 
-function draw() {
-	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	drawTomato();
-	bounceTomatoes();
-	drawCritter();
-	drawScore();
-	requestAnimationFrame(draw);
+let draw
+{
+	let lastTime;
+	let lastDeltaTime;
+	draw = function() {
+		let time = performance.now();
+		let deltaTime; // calculated so that the game doesn't slow down on slow computers
+		if (typeof lastTime == "number")
+			deltaTime = (time - lastTime + lastDeltaTime) / 16; // smoothed out with last deltatime due to time imprecision
+			// divided by 16 to slow down game speed
+		else
+			deltaTime = 0; // when the game starts there's no last draw
+		lastTime = time;
+		lastDeltaTime = deltaTime;
+
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		moveTomatoes(deltaTime);
+		drawTomato();
+		drawCritter();
+		drawScore();
+		requestAnimationFrame(draw);
+	}
 }
 
 function drawTomato() {
 	for (let t of tomatoes) {
-		t.x += t.xv;
-		t.y += t.yv;
-		t.yv += .15;
-
 		ctx.beginPath();
 		ctx.arc(t.x, t.y, tomatoRadius, 0, Math.PI * 2);
 		ctx.fillStyle = "#fc0339";
@@ -43,26 +54,30 @@ function drawTomato() {
 	}
 }
 
-function bounceTomatoes() {
+function moveTomatoes(deltaTime) {
 	for (let t of tomatoes) {
-		if (t.x <= 0 + tomatoRadius || t.x >= canvas.width - tomatoRadius)
+		// move tomatoes
+		t.x += t.xv * deltaTime;
+		t.y += t.yv * deltaTime;
+		t.yv += .15 * deltaTime;
+
+		// bounce tomatoes
+		if (t.x <= tomatoRadius || t.x >= canvas.width - tomatoRadius)
 			t.xv *= -1; // bounce off wall
-		if (t.y > canvas.height - tomatoRadius - critter.height) {
+		if (t.y >= canvas.height - tomatoRadius - critter.height) { // in critter area (bottom of screen)
 			if (t.x < critter.x + critter.width && t.x > critter.x) {
-				t.yv = Math.random() * -2 - 8;
+				t.yv = Math.random() * -2 - 8; // bounce off critter
 				playSound("bounce");
 				score += 10;
 			} else {
 				if (t.x < critter.x && t.x > critter.x - tomatoRadius) {
-					t.xv = -t.xv;
+					t.xv = -t.xv; // bounce off critter side
 					t.x = t.x - 1;
 					critter.canMove = false;
-				} else {
-					if (t.x < critter.x + critter.width + tomatoRadius && t.x > critter.x + critter.width) {
-						t.xv = -t.xv;
-						t.x = t.x + 1;
-						critter.canMove = false;
-					}
+				} else if (t.x < critter.x + critter.width + tomatoRadius && t.x > critter.x + critter.width) {
+					t.xv = -t.xv; // bounce off critter side
+					t.x = t.x + 1;
+					critter.canMove = false;
 				}
 			}
 		}
