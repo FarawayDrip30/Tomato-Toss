@@ -24,16 +24,6 @@
     var tomatoDY = -2;
     var tomatoRadius = 10;
 
-    class Tomato{
-        constructor(x, y, dx, dy, momentum){
-            this.tomatox = x;
-            this.tomatoy = y;
-            this.tomatodx = dx;
-            this.tomatody = dy;
-            this.tomatomomentum = momentum;
-		}
-	}
-
     var momentumY = 100;
 
     var critterHeight = 75;
@@ -58,7 +48,7 @@
 
     function drawTomato(){
 
-     for (let t of tomatoes) {
+     for (var t of tomatoes) {
             t.x += t.xv;
             t.y += t.yv*(t.momentum/50);
             t.momentum--;
@@ -83,36 +73,38 @@
 	}
 
     function bounceTomatoOffWalls(){
-        if(tomatoX > canvas.width-tomatoRadius){
-            tomatoDX = -tomatoDX;
-		}
-        if(tomatoX < 0+tomatoRadius){
-            tomatoDX = -tomatoDX;
-		}
-        if(tomatoY > canvas.height-tomatoRadius-critterHeight){
-            if(tomatoX < critterX+critterWidth && tomatoX > critterX){
-                momentumY = Math.random()*75+50;  
-                score += 10;
-            }
-            else{
-                if(tomatoX < critterX && tomatoX > critterX-tomatoRadius){
-                    tomatoDX = -tomatoDX; 
-                    tomatoX = tomatoX-1;
-                    critterCanMove = false;
-				}     
+        for(t of tomatoes){
+            if(t.x > canvas.width-tomatoRadius){
+                t.xv = -t.xv;
+		    }
+            if(t.x < 0+tomatoRadius){
+             t.xv = -t.xv;
+		    }
+            if(t.y > canvas.height-tomatoRadius-critterHeight){
+                if(t.x < critterX+critterWidth && t.x > critterX){
+                    t.momentum = Math.random()*75+50;  
+                    score += 10;
+                }
                 else{
-                    if(tomatoX < critterX+critterWidth+tomatoRadius && tomatoX > critterX+critterWidth)        {
-                        tomatoDX = -tomatoDX;
-                        tomatoX = tomatoX+1;
+                    if(t.x < critterX && t.x > critterX-tomatoRadius){
+                        t.xv = -t.xv; 
+                        t.x = t.x-1;
                         critterCanMove = false;
-					}
-				}
-			}
-		}
-        if(tomatoY > canvas.height-tomatoRadius){
-              document.location.reload();
-              alert("Game Over");
-		}
+				    }     
+                    else{
+                        if(t.x < critterX+critterWidth+tomatoRadius && t.x > critterX+critterWidth)        {
+                            t.xv = -t.xv;
+                            t.x = t.x+1;
+                            critterCanMove = false;
+					    }
+				    }
+			    }
+		    }   
+            if(t.y > canvas.height-tomatoRadius){
+                document.location.reload();
+                alert("Game Over");
+		    }
+        }
 	}
 
     function drawCritter(){
