@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
+    
+    <audio id="audioBounce">
+        <source src="bounce.wav" type="audio/wav">
+    </audio>
+
     <body>
 
     <title>Tomato Toss</title>
@@ -10,8 +15,6 @@
     </style>
 
     <canvas id="tomatoCanvas" width="855" height="480"></canvas>
-
-    <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
 
     <script>
 
@@ -84,6 +87,7 @@
                 if(t.x < critterX+critterWidth && t.x > critterX){
                     t.momentum = Math.random()*75+50;  
                     score += 10;
+                    playSound("bounce");
                 }
                 else{
                     if(t.x < critterX && t.x > critterX-tomatoRadius){
@@ -182,15 +186,31 @@
 		}
 	}
 
-    createjs.Sound.registerSound("bounce.WAV", "bounce");
+    let audio = { // add other audio elements if needed
+	    bounce: document.getElementById("audioBounce"),
+    };
+    audio.bounce.volume = .5;
 
-    function bounceSoundActivate(){
-        var bounceSound = createjs.Sound.play("bounce");
-        bounceSound.volume = 0.5;
-	}
+    function playSound(sound, action = "restart") {
+	    switch (action) {
+		    case "restart":
+			    audio[sound].currentTime = 0;
+			    audio[sound].play();
+			    break;
+		    case "play":
+		    case "unpause":
+			    audio[sound].play();
+			    break;
+		    case "pause":
+			    audio[sound].pause();
+			    break;
+		    case "stop":
+			    audio[sound].pause();
+			    audio[sound].currentTime = 0;
+			    break;
+	    }
+    }
 
-    bounceSoundActivate();
-	
 	let tomatoes = [{x:canvas.width/2,y:canvas.height-100,xv:1.5,yv:-2, momentum:100},{x:canvas.width/2,y:canvas.height-150,xv:1.5,yv:-2, momentum:100}];
 
     draw();
