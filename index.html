@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en-us">
   <head>
+    
+    <audio id="audioBounce">
+        <source src="bounce.wav" type="audio/wav">
+    </audio>
+
     <body>
 
     <title>Tomato Toss</title>
@@ -11,31 +16,25 @@
 
     <canvas id="tomatoCanvas" width="855" height="480"></canvas>
 
-    <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
-
     <script>
 
-    var canvas = document.getElementById("tomatoCanvas");
-    var ctx = canvas.getContext("2d");
+    let canvas = document.getElementById("tomatoCanvas");
+    let ctx = canvas.getContext("2d");
+	
+    let tomatoRadius = 10;
 
-    var tomatoX = canvas.width/2;
-    var tomatoY = canvas.height-100;
-    var tomatoDX = 1.5;
-    var tomatoDY = -2;
-    var tomatoRadius = 10;
+    let gravity = 1/25;
 
-    var momentumY = 100;
+    let critterHeight = 75;
+    let critterWidth = 50;
+    let critterX = canvas.width/2-critterWidth/2;
+    let critterY = canvas.height-critterHeight;
+    let critterCanMove = true;
 
-    var critterHeight = 75;
-    var critterWidth = 50;
-    var critterX = canvas.width/2-critterWidth/2;
-    var critterY = canvas.height-critterHeight;
-    var critterCanMove = true;
+    let leftPressed = false;
+    let rightPressed = false;
 
-    leftPressed = false;
-    rightPressed = false;
-
-    var score = 0;
+    let score = 0;
 
     function draw(){
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -48,10 +47,10 @@
 
     function drawTomato(){
 
-     for (var t of tomatoes) {
+     for (let t of tomatoes) {
             t.x += t.xv;
-            t.y += t.yv*(t.momentum/50);
-            t.momentum--;
+            t.y += t.yv;
+			t.yv += gravity;
 
             ctx.beginPath();
             ctx.arc(t.x, t.y, tomatoRadius, 0, Math.PI*2);
@@ -73,7 +72,7 @@
 	}
 
     function bounceTomatoOffWalls(){
-        for(t of tomatoes){
+        for(let t of tomatoes){
             if(t.x > canvas.width-tomatoRadius){
                 t.xv = -t.xv;
 		    }
@@ -82,8 +81,9 @@
 		    }
             if(t.y > canvas.height-tomatoRadius-critterHeight){
                 if(t.x < critterX+critterWidth && t.x > critterX){
-                    t.momentum = Math.random()*75+50;  
+                    t.yv = -3 * Math.random() - 2;  
                     score += 10;
+                    playSound("bounce");
                 }
                 else{
                     if(t.x < critterX && t.x > critterX-tomatoRadius){
@@ -182,16 +182,32 @@
 		}
 	}
 
-    createjs.Sound.registerSound("bounce.WAV", "bounce");
+    let audio = { // add other audio elements if needed
+	    bounce: document.getElementById("audioBounce"),
+    };
+    audio.bounce.volume = .5;
 
-    function bounceSoundActivate(){
-        var bounceSound = createjs.Sound.play("bounce");
-        bounceSound.volume = 0.5;
-	}
+    function playSound(sound, action = "restart") {
+	    switch (action) {
+		    case "restart":
+			    audio[sound].currentTime = 0;
+			    audio[sound].play();
+			    break;
+		    case "play":
+		    case "unpause":
+			    audio[sound].play();
+			    break;
+		    case "pause":
+			    audio[sound].pause();
+			    break;
+		    case "stop":
+			    audio[sound].pause();
+			    audio[sound].currentTime = 0;
+			    break;
+	    }
+    }
 
-    bounceSoundActivate();
-	
-	let tomatoes = [{x:canvas.width/2,y:canvas.height-100,xv:1.5,yv:-2, momentum:100},{x:canvas.width/2,y:canvas.height-150,xv:1.5,yv:-2, momentum:100}];
+	let tomatoes = [{x:canvas.width/2,y:canvas.height-100,xv:1.5,yv:-4},{x:canvas.width/2,y:canvas.height-150,xv:1.5,yv:-4}];
 
     draw();
 
