@@ -3,10 +3,9 @@
 let canvas = document.getElementById("tomatoCanvas");
 let ctx = canvas.getContext("2d");
 
-let tomatoRadius = 10;
 let tomatoes = [
-	{ x: canvas.width / 3, y: canvas.height - 300, xv: 4, yv: 0, }, // xv and yv are speed/velocity/momentum
-	{ x: canvas.width / 3 * 2, y: canvas.height - 80, xv: 3, yv: -8, },
+	{ x: canvas.width / 3, y: canvas.height - 300, xv: 4, yv: 0, s: 10, }, // xv and yv are speed/velocity/momentum, s is size (radius)
+	{ x: canvas.width / 3 * 2, y: canvas.height - 80, xv: 3, yv: -8, s: 8, },
 ];
 
 let critter = {
@@ -54,7 +53,7 @@ let draw;
 function drawTomato() {
 	for (let t of tomatoes) {
 		ctx.beginPath();
-		ctx.arc(t.x, t.y, tomatoRadius, 0, Math.PI * 2);
+		ctx.arc(t.x, t.y, t.s, 0, Math.PI * 2);
 		ctx.fillStyle = "#fc0339";
 		ctx.fill();
 		ctx.closePath();
@@ -83,23 +82,23 @@ function moveTomatoes(deltaTime) {
 		t.yv += .15 * deltaTime;
 
 		// bounce tomatoes
-		if (t.x <= tomatoRadius || t.x >= canvas.width - tomatoRadius)
+		if (t.x <= t.s || t.x >= canvas.width - t.s)
 			t.xv *= -1; // bounce off wall
 
 		if (t.fallen) { // already went past top of critter (missed bounce), impossible to get tomato
-			if (t.x < critter.x && t.x > critter.x - tomatoRadius) {
+			if (t.x < critter.x && t.x > critter.x - t.s) {
 				t.xv = -t.xv; // bounce off critter side
 				t.x = t.x - 1;
-			} else if (t.x < critter.x + critter.width + tomatoRadius && t.x > critter.x + critter.width) {
+			} else if (t.x < critter.x + critter.width + t.s && t.x > critter.x + critter.width) {
 				t.xv = -t.xv; // bounce off critter side
 				t.x = t.x + 1;
 			}
-			if (t.y > canvas.height - tomatoRadius)
+			if (t.y > canvas.height - t.s)
 				gameOver(); // hit floor
-		} else if (t.y >= canvas.height - tomatoRadius - critter.height && // in critter area (bottom of screen)
+		} else if (t.y >= canvas.height - t.s - critter.height && // in critter area (bottom of screen)
 			t.yv >= 0 // not moving up
 		) {
-			if (t.x + tomatoRadius > critter.x && t.x - tomatoRadius < critter.x + critter.width) {
+			if (t.x + t.s > critter.x && t.x - t.s < critter.x + critter.width) {
 				t.yv = Math.random() * -2 - 8; // bounce off top of critter
 				playSound("bounce");
 				score += 10;
