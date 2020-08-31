@@ -3,6 +3,8 @@
 let canvas = document.getElementById("tomatoCanvas");
 let ctx = canvas.getContext("2d");
 
+const GRAVITY = .15;
+
 let tomatoes = [
 	{ x: canvas.width / 3, y: canvas.height - 300, xv: 4, yv: 0, s: 10, }, // xv and yv are speed/velocity/momentum, s is size (radius)
 	{ x: canvas.width / 3 * 2, y: canvas.height - 80, xv: 3, yv: -8, s: 8, },
@@ -79,7 +81,7 @@ function moveTomatoes(deltaTime) {
 		// move tomatoes
 		t.x += t.xv * deltaTime;
 		t.y += t.yv * deltaTime;
-		t.yv += .15 * deltaTime;
+		t.yv += GRAVITY * deltaTime;
 
 		// bounce tomatoes
 		if (t.x <= t.s || t.x >= canvas.width - t.s)
