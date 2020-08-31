@@ -93,7 +93,7 @@ function moveTomatoes(deltaTime) {
 			}
 			if (t.y > canvas.height - t.s)
 				setTimeout(gameOver, 0); // hit floor
-				// timeout used because gameover doesn't while draw is running
+			// timeout used because gameOver doesn't work while draw is running
 		} else if (t.y >= canvas.height - t.s - critter.height && // in critter area (bottom of screen)
 			t.yv >= 0 // not moving up
 		) {
