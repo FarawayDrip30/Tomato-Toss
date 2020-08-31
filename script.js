@@ -3,71 +3,58 @@
 let canvas = document.getElementById("tomatoCanvas");
 let ctx = canvas.getContext("2d");
 
-let tomatoRadius = 10;
-
-let critter = {
-	width: 50,
-	height: 75,
-	canMove: true,
-};
-critter.x = canvas.width / 2 - critter.width / 2;
-critter.y = canvas.height - critter.height;
+const GRAVITY = .15;
 
 let keymap = {
 	left: false,
 	right: false,
 };
 
-let score = 0;
+let tomatoes, // variables that get reset (set in function restartGame)
+	critter,
+	score;
 
-function draw() {
-	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	drawTomato();
-	bounceTomatoes();
-	drawCritter();
-	drawScore();
-	requestAnimationFrame(draw);
+/**
+ * draw
+ */
+let draw,
+	stopDraw;
+{
+	let lastTime;
+	let lastDeltaTime;
+	let drawRequest;
+	draw = function () {
+		let time = performance.now();
+		let deltaTime; // calculated so that the game doesn't slow down on slow computers
+		if (typeof lastTime == "number")
+			deltaTime = (time - lastTime + lastDeltaTime) / 16; // smoothed out with last deltatime to deal with time imprecision
+		// divided by 16 to slow down game speed
+		else
+			deltaTime = 0; // when the game starts there's no last draw
+		lastTime = time;
+		lastDeltaTime = deltaTime;
+
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		moveTomatoes(deltaTime);
+		drawTomato();
+		drawCritter();
+		drawScore();
+		drawRequest = requestAnimationFrame(draw);
+	};
+	stopDraw = function () {
+		lastTime = undefined;
+		lastDeltaTime = undefined;
+		cancelAnimationFrame(drawRequest);
+	};
 }
 
 function drawTomato() {
 	for (let t of tomatoes) {
-		t.x += t.xv;
-		t.y += t.yv;
-		t.yv += .15;
-
 		ctx.beginPath();
-		ctx.arc(t.x, t.y, tomatoRadius, 0, Math.PI * 2);
+		ctx.arc(t.x, t.y, t.s, 0, Math.PI * 2);
 		ctx.fillStyle = "#fc0339";
 		ctx.fill();
 		ctx.closePath();
-	}
-}
-
-function bounceTomatoes() {
-	for (let t of tomatoes) {
-		if (t.x <= 0 + tomatoRadius || t.x >= canvas.width - tomatoRadius)
-			t.xv *= -1; // bounce off wall
-		if (t.y > canvas.height - tomatoRadius - critter.height) {
-			if (t.x < critter.x + critter.width && t.x > critter.x) {
-				t.yv = Math.random() * -2 - 8;
-				playSound("bounce");
-				score += 10;
-			} else {
-				if (t.x < critter.x && t.x > critter.x - tomatoRadius) {
-					t.xv = -t.xv;
-					t.x = t.x - 1;
-					critter.canMove = false;
-				} else {
-					if (t.x < critter.x + critter.width + tomatoRadius && t.x > critter.x + critter.width) {
-						t.xv = -t.xv;
-						t.x = t.x + 1;
-						critter.canMove = false;
-					}
-				}
-			}
-		}
-		if (t.y > canvas.height - tomatoRadius)
-			gameOver();
 	}
 }
 
@@ -79,9 +66,52 @@ function drawCritter() {
 function drawScore() {
 	ctx.font = "16px Arial";
 	ctx.fillStyle = "#fc0339";
-	ctx.fillText("Score: " + score, 8, 20);
+	ctx.fillText(`Score: ${score}`, 8, 20);
 }
 
+/**
+ * game logic
+ */
+function moveTomatoes(deltaTime) {
+	for (let t of tomatoes) {
+		// move tomatoes
+		t.x += t.xv * deltaTime;
+		t.y += t.yv * deltaTime;
+		t.yv += GRAVITY * deltaTime;
+
+		// bounce tomatoes
+		if (t.x <= t.s || t.x >= canvas.width - t.s)
+			t.xv *= -1; // bounce off wall
+
+		if (t.fallen) { // already went past top of critter (missed bounce), impossible to get tomato
+			if (t.x < critter.x && t.x > critter.x - t.s) {
+				t.xv = -t.xv; // bounce off critter side
+				t.x = t.x - 1;
+			} else if (t.x < critter.x + critter.width + t.s && t.x > critter.x + critter.width) {
+				t.xv = -t.xv; // bounce off critter side
+				t.x = t.x + 1;
+			}
+			if (t.y > canvas.height - t.s)
+				setTimeout(gameOver, 0); // hit floor
+			// timeout used because gameOver doesn't work while draw is running
+		} else if (t.y >= canvas.height - t.s - critter.height && // in critter area (bottom of screen)
+			t.yv >= 0 // not moving up
+		) {
+			if (t.x + t.s > critter.x && t.x - t.s < critter.x + critter.width) {
+				t.yv = Math.random() * -2 - 8; // bounce off top of critter
+				playSound("bounce");
+				score += 10;
+			} else {
+				t.fallen = true; // didn't bounce off top, now impossible to get tomato
+				critter.canMove = false;
+			}
+		}
+	}
+}
+
+/**
+ * player movement
+ */
 function keyHandler(state) { // returns another function, the inside function is used in the event handler
 	return function ({ code: key }) {
 		switch (key) {
@@ -108,6 +138,9 @@ function mouseMoveHandler(e) {
 	}
 }
 
+/**
+ * audio
+ */
 let audio = { // add other audio elements if needed
 	bounce: document.getElementById("audioBounce"),
 };
@@ -133,26 +166,47 @@ function playSound(sound, action = "restart") {
 	}
 }
 
+/**
+ * game begin and end
+ */
 function gameOver() {
-	document.location.reload();
-	alert("Game Over");
+	stopDraw();
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.font = "64px Arial";
+	ctx.fillStyle = "#F00";
+	ctx.fillText(`Game over! Score: ${score}`, 8, 64);
+	restartGame(200);
 }
-
-let tomatoes = [
-	{ x: canvas.width / 3, y: canvas.height - 300, xv: 4, yv: 0 },
-	{ x: canvas.width / 3 * 2, y: canvas.height - 80, xv: 3, yv: -8 },
-];
 
 function startGame() {
 	canvas.removeEventListener("mousedown", startGame);
-
-	document.addEventListener("keydown", keyHandler(true));
-	document.addEventListener("keyup", keyHandler(false));
-	canvas.addEventListener("mousemove", mouseMoveHandler);
-
 	draw();
 }
-canvas.addEventListener("mousedown", startGame);
-ctx.font = "128px Arial";
-ctx.fillStyle = "#000";
-ctx.fillText("Click to start", 8, 128);
+
+function restartGame(textHeight = 128) { // different height used for game over
+	tomatoes = [
+		{ x: canvas.width / 3, y: canvas.height - 300, xv: 4, yv: 0, s: 10, }, // xv and yv are speed/velocity/momentum, s is size (radius)
+		{ x: canvas.width / 3 * 2, y: canvas.height - 80, xv: 3, yv: -8, s: 8, },
+	];
+
+	critter = {
+		width: 50,
+		height: 75,
+		canMove: true,
+	};
+	critter.x = canvas.width / 2 - critter.width / 2;
+	critter.y = canvas.height - critter.height;
+
+	score = 0;
+
+	canvas.addEventListener("mousedown", startGame);
+
+	ctx.font = "128px Arial";
+	ctx.fillStyle = "#000";
+	ctx.fillText("Click to start", 8, textHeight);
+}
+
+document.addEventListener("keydown", keyHandler(true)); // keyboard movement unfinished
+document.addEventListener("keyup", keyHandler(false));
+canvas.addEventListener("mousemove", mouseMoveHandler);
+restartGame();
