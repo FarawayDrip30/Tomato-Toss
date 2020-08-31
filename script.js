@@ -5,33 +5,24 @@ let ctx = canvas.getContext("2d");
 
 const GRAVITY = .15;
 
-let tomatoes = [
-	{ x: canvas.width / 3, y: canvas.height - 300, xv: 4, yv: 0, s: 10, }, // xv and yv are speed/velocity/momentum, s is size (radius)
-	{ x: canvas.width / 3 * 2, y: canvas.height - 80, xv: 3, yv: -8, s: 8, },
-];
-
-let critter = {
-	width: 50,
-	height: 75,
-	canMove: true,
-};
-critter.x = canvas.width / 2 - critter.width / 2;
-critter.y = canvas.height - critter.height;
-
-let score = 0;
-
 let keymap = {
 	left: false,
 	right: false,
 };
 
+let tomatoes, // variables that get reset (set in function restartGame)
+	critter,
+	score;
+
 /**
  * draw
  */
-let draw;
+let draw,
+	stopDraw;
 {
 	let lastTime;
 	let lastDeltaTime;
+	let drawRequest;
 	draw = function () {
 		let time = performance.now();
 		let deltaTime; // calculated so that the game doesn't slow down on slow computers
@@ -48,7 +39,12 @@ let draw;
 		drawTomato();
 		drawCritter();
 		drawScore();
-		requestAnimationFrame(draw);
+		drawRequest = requestAnimationFrame(draw);
+	};
+	stopDraw = function () {
+		lastTime = undefined;
+		lastDeltaTime = undefined;
+		cancelAnimationFrame(drawRequest);
 	};
 }
 
@@ -96,7 +92,8 @@ function moveTomatoes(deltaTime) {
 				t.x = t.x + 1;
 			}
 			if (t.y > canvas.height - t.s)
-				gameOver(); // hit floor
+				setTimeout(gameOver, 0); // hit floor
+				// timeout used because gameover doesn't while draw is running
 		} else if (t.y >= canvas.height - t.s - critter.height && // in critter area (bottom of screen)
 			t.yv >= 0 // not moving up
 		) {
@@ -173,20 +170,43 @@ function playSound(sound, action = "restart") {
  * game begin and end
  */
 function gameOver() {
-	document.location.reload();
-	alert("Game Over");
+	stopDraw();
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.font = "64px Arial";
+	ctx.fillStyle = "#F00";
+	ctx.fillText(`Game over! Score: ${score}`, 8, 64);
+	restartGame(200);
 }
 
 function startGame() {
 	canvas.removeEventListener("mousedown", startGame);
-
-	document.addEventListener("keydown", keyHandler(true)); // keyboard movement unfinished
-	document.addEventListener("keyup", keyHandler(false));
-	canvas.addEventListener("mousemove", mouseMoveHandler);
-
 	draw();
 }
-canvas.addEventListener("mousedown", startGame);
-ctx.font = "128px Arial";
-ctx.fillStyle = "#000";
-ctx.fillText("Click to start", 8, 128);
+
+function restartGame(textHeight = 128) { // different height used for game over
+	tomatoes = [
+		{ x: canvas.width / 3, y: canvas.height - 300, xv: 4, yv: 0, s: 10, }, // xv and yv are speed/velocity/momentum, s is size (radius)
+		{ x: canvas.width / 3 * 2, y: canvas.height - 80, xv: 3, yv: -8, s: 8, },
+	];
+
+	critter = {
+		width: 50,
+		height: 75,
+		canMove: true,
+	};
+	critter.x = canvas.width / 2 - critter.width / 2;
+	critter.y = canvas.height - critter.height;
+
+	score = 0;
+
+	canvas.addEventListener("mousedown", startGame);
+
+	ctx.font = "128px Arial";
+	ctx.fillStyle = "#000";
+	ctx.fillText("Click to start", 8, textHeight);
+}
+
+document.addEventListener("keydown", keyHandler(true)); // keyboard movement unfinished
+document.addEventListener("keyup", keyHandler(false));
+canvas.addEventListener("mousemove", mouseMoveHandler);
+restartGame();
