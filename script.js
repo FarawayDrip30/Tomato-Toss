@@ -66,7 +66,7 @@ function drawCritter() {
 function drawScore() {
 	ctx.font = "16px Arial";
 	ctx.fillStyle = "#fc0339";
-	ctx.fillText("Score: " + score, 8, 20);
+	ctx.fillText(`Score: ${score}`, 8, 20);
 }
 
 /**
