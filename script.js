@@ -4,6 +4,10 @@ let canvas = document.getElementById("tomatoCanvas");
 let ctx = canvas.getContext("2d");
 
 let tomatoRadius = 10;
+let tomatoes = [
+	{ x: canvas.width / 3, y: canvas.height - 300, xv: 4, yv: 0, }, // xv and yv are speed/velocity/momentum
+	{ x: canvas.width / 3 * 2, y: canvas.height - 80, xv: 3, yv: -8, },
+];
 
 let critter = {
 	width: 50,
@@ -13,13 +17,16 @@ let critter = {
 critter.x = canvas.width / 2 - critter.width / 2;
 critter.y = canvas.height - critter.height;
 
+let score = 0;
+
 let keymap = {
 	left: false,
 	right: false,
 };
 
-let score = 0;
-
+/**
+ * draw
+ */
 let draw;
 {
 	let lastTime;
@@ -28,7 +35,7 @@ let draw;
 		let time = performance.now();
 		let deltaTime; // calculated so that the game doesn't slow down on slow computers
 		if (typeof lastTime == "number")
-			deltaTime = (time - lastTime + lastDeltaTime) / 16; // smoothed out with last deltatime due to time imprecision
+			deltaTime = (time - lastTime + lastDeltaTime) / 16; // smoothed out with last deltatime to deal with time imprecision
 		// divided by 16 to slow down game speed
 		else
 			deltaTime = 0; // when the game starts there's no last draw
@@ -54,42 +61,6 @@ function drawTomato() {
 	}
 }
 
-function moveTomatoes(deltaTime) {
-	for (let t of tomatoes) {
-		// move tomatoes
-		t.x += t.xv * deltaTime;
-		t.y += t.yv * deltaTime;
-		t.yv += .15 * deltaTime;
-
-		// bounce tomatoes
-		if (t.x <= tomatoRadius || t.x >= canvas.width - tomatoRadius)
-			t.xv *= -1; // bounce off wall
-
-		if (t.fallen) { // already went past top of critter, impossible to save
-			if (t.x < critter.x && t.x > critter.x - tomatoRadius) {
-				t.xv = -t.xv; // bounce off critter side
-				t.x = t.x - 1;
-			} else if (t.x < critter.x + critter.width + tomatoRadius && t.x > critter.x + critter.width) {
-				t.xv = -t.xv; // bounce off critter side
-				t.x = t.x + 1;
-			}
-			if (t.y > canvas.height - tomatoRadius)
-				gameOver();
-		} else if (t.y >= canvas.height - tomatoRadius - critter.height && // in critter area (bottom of screen)
-			t.yv >= 0 // not moving up
-		) {
-			if (t.x + tomatoRadius > critter.x && t.x - tomatoRadius < critter.x + critter.width) {
-				t.yv = Math.random() * -2 - 8; // bounce off top of critter
-				playSound("bounce");
-				score += 10;
-			} else {
-				t.fallen = true; // didn't bounce off top, no longer possible to save
-				critter.canMove = false;
-			}
-		}
-	}
-}
-
 function drawCritter() {
 	ctx.fillStyle = "#ff9d52";
 	ctx.fillRect(critter.x, critter.y, critter.width, critter.height);
@@ -101,6 +72,48 @@ function drawScore() {
 	ctx.fillText("Score: " + score, 8, 20);
 }
 
+/**
+ * game logic
+ */
+function moveTomatoes(deltaTime) {
+	for (let t of tomatoes) {
+		// move tomatoes
+		t.x += t.xv * deltaTime;
+		t.y += t.yv * deltaTime;
+		t.yv += .15 * deltaTime;
+
+		// bounce tomatoes
+		if (t.x <= tomatoRadius || t.x >= canvas.width - tomatoRadius)
+			t.xv *= -1; // bounce off wall
+
+		if (t.fallen) { // already went past top of critter (missed bounce), impossible to get tomato
+			if (t.x < critter.x && t.x > critter.x - tomatoRadius) {
+				t.xv = -t.xv; // bounce off critter side
+				t.x = t.x - 1;
+			} else if (t.x < critter.x + critter.width + tomatoRadius && t.x > critter.x + critter.width) {
+				t.xv = -t.xv; // bounce off critter side
+				t.x = t.x + 1;
+			}
+			if (t.y > canvas.height - tomatoRadius)
+				gameOver(); // hit floor
+		} else if (t.y >= canvas.height - tomatoRadius - critter.height && // in critter area (bottom of screen)
+			t.yv >= 0 // not moving up
+		) {
+			if (t.x + tomatoRadius > critter.x && t.x - tomatoRadius < critter.x + critter.width) {
+				t.yv = Math.random() * -2 - 8; // bounce off top of critter
+				playSound("bounce");
+				score += 10;
+			} else {
+				t.fallen = true; // didn't bounce off top, now impossible to get tomato
+				critter.canMove = false;
+			}
+		}
+	}
+}
+
+/**
+ * player movement
+ */
 function keyHandler(state) { // returns another function, the inside function is used in the event handler
 	return function ({ code: key }) {
 		switch (key) {
@@ -127,6 +140,9 @@ function mouseMoveHandler(e) {
 	}
 }
 
+/**
+ * audio
+ */
 let audio = { // add other audio elements if needed
 	bounce: document.getElementById("audioBounce"),
 };
@@ -152,20 +168,18 @@ function playSound(sound, action = "restart") {
 	}
 }
 
+/**
+ * game begin and end
+ */
 function gameOver() {
 	document.location.reload();
 	alert("Game Over");
 }
 
-let tomatoes = [
-	{ x: canvas.width / 3, y: canvas.height - 300, xv: 4, yv: 0 },
-	{ x: canvas.width / 3 * 2, y: canvas.height - 80, xv: 3, yv: -8 },
-];
-
 function startGame() {
 	canvas.removeEventListener("mousedown", startGame);
 
-	document.addEventListener("keydown", keyHandler(true));
+	document.addEventListener("keydown", keyHandler(true)); // keyboard movement unfinished
 	document.addEventListener("keyup", keyHandler(false));
 	canvas.addEventListener("mousemove", mouseMoveHandler);
 
